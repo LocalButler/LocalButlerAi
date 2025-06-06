@@ -1,0 +1,13 @@
+
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+google-generativeai>=0.5.0 # Includes ADK, Gemini client, and related functionalities
+
+# Optional, but potentially useful for more complex scenarios or specific tools:
+google-cloud-aiplatform>=1.36.0 # If interacting with Vertex AI services
+requests>=2.30.0 # For any direct HTTP calls made by tools
+
+# Ensure any other specific dependencies for your agents/tools are added below
