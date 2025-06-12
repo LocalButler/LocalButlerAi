@@ -1,4 +1,4 @@
-# backend/app/config.py
+# butler_agent_pkg/config.py
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 import logging
@@ -11,7 +11,7 @@ class AppSettings(BaseSettings):
 
     GEMINI_API_KEY: str
     LOCAL_BUTLER_API_KEY: str # Add this line
-    DEFAULT_MODEL: str = "gemini-1.5-flash-latest"
+    DEFAULT_MODEL: str = "gemini-2.0-flash"
     LOG_LEVEL: str = "INFO"
 
     # For Pydantic V2, model_config is used instead of class Config
@@ -35,6 +35,6 @@ else:
     )
 
 # To use in other modules:
-# from app.config import settings
+# from .config import settings
 # api_key = settings.GEMINI_API_KEY
 # default_model = settings.DEFAULT_MODEL

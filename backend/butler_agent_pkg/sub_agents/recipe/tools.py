@@ -1,10 +1,10 @@
-# backend/app/sub_agents/recipe/tools.py
+# butler_agent_pkg/sub_agents/recipe/tools.py
 """Tools for the RecipeAgent, including inventory checking."""
 
 import logging
 from typing import List, Dict
 
-from backend.app.shared_libraries import types
+from ...shared_libraries import types
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,8 @@ def check_inventory_and_create_shopping_list(
     for item in user_inventory_ingredients:
         # Normalize name (lowercase, strip whitespace) for comparison
         normalized_name = item.name.lower().strip()
-        key = f"{normalized_name}_{item.unit.lower().strip()}" # Consider unit in key for more accuracy
+        unit_str = item.unit.lower().strip() if item.unit else "_unitless_"
+        key = f"{normalized_name}_{unit_str}" # Consider unit in key for more accuracy
         
         if key in inventory_map:
             # Aggregate quantities if item with same name and unit already exists
@@ -44,7 +45,8 @@ def check_inventory_and_create_shopping_list(
 
     for req_ingredient in recipe_ingredients:
         normalized_req_name = req_ingredient.name.lower().strip()
-        req_key = f"{normalized_req_name}_{req_ingredient.unit.lower().strip()}"
+        req_unit_str = req_ingredient.unit.lower().strip() if req_ingredient.unit else "_unitless_"
+        req_key = f"{normalized_req_name}_{req_unit_str}"
         
         needed_quantity = req_ingredient.quantity
         

@@ -1,0 +1,61 @@
+name: Deploy to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - main  # Or 'master', or your default branch
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GAR_LOCATION: us-central1 # Example: us-central1, change to your preferred region
+  SERVICE_NAME: local-butler-backend # Choose a name for your Cloud Run service
+  REGION: us-central1 # Example: us-central1, change to your Cloud Run service region
+  DOCKERFILE_PATH: ./backend/Dockerfile # Path to your backend Dockerfile
+  IMAGE_NAME: local-butler-backend # Name for your Docker image
+
+jobs:
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write' # Required for Workload Identity Federation
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }} # e.g., projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }} # e.g., your-service-account@your-project-id.iam.gserviceaccount.com
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker
+        run: gcloud auth configure-docker ${{ env.GAR_LOCATION }}-docker.pkg.dev
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --tag "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --file "${{ env.DOCKERFILE_PATH }}" \
+            ./backend # Build context
+
+      - name: Push Docker image to Artifact Registry
+        run: docker push "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --image "${{ env.GAR_LOCATION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.IMAGE_NAME }}/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            --region ${{ env.REGION }} \
+            --platform managed \
+            --quiet \
+            --set-env-vars="GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" \
+            --set-env-vars="MONGO_URI=${{ secrets.MONGO_URI }}" \
+            --set-env-vars="LOCAL_BUTLER_API_KEY=${{ secrets.LOCAL_BUTLER_API_KEY }}" \
+            --set-env-vars="LOG_LEVEL=${{ secrets.LOG_LEVEL }}" \
+            --allow-unauthenticated # Remove if you want to restrict access

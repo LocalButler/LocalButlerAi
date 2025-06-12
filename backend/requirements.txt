@@ -1,10 +1,10 @@
-
 fastapi>=0.100.0
 uvicorn[standard]>=0.23.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
-google-generativeai>=0.5.0 # Includes ADK, Gemini client, and related functionalities
+google-generativeai==0.8.5
+google-adk>=1.0.0 # Explicitly add or upgrade ADK for latest agent and streaming support
 
 # Optional, but potentially useful for more complex scenarios or specific tools:
 google-cloud-aiplatform>=1.36.0 # If interacting with Vertex AI services

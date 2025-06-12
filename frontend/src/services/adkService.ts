@@ -4,7 +4,7 @@
 // Ensure this URL points to your ADK backend (FastAPI gateway)
 // For local development, this might be http://localhost:8080 or similar.
 // For deployed, it will be your Cloud Run URL.
-const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://localhost:8080'; // Fallback for local dev
+const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://localhost:8001'; // Fallback for local dev (FastAPI backend on new port)
 
 interface ADKChatRequestPayload {
   message: string;
@@ -40,13 +40,16 @@ class ADKService {
 
   async sendMessageToButler(payload: ADKChatRequestPayload): Promise<ADKAgentResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/chat`, {
+      const response = await fetch(`${this.baseUrl}/chat/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           // Add any other headers like Authorization if you implement auth
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          query: payload.message, // Map frontend 'message' to backend 'query'
+          session_id: payload.session_id // Pass along session_id if present
+        }),
       });
 
       if (!response.ok) {

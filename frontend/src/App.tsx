@@ -12,6 +12,7 @@ import MyKitchenSection from './components/MyKitchenSection';
 import CalendarSection from './components/CalendarSection'; 
 import DietarySection from './components/DietarySection'; 
 import JournalAndRecipesSection from './components/MealPlanJournalSection'; // CORRECTED IMPORT PATH
+import ChatBubble from './components/ChatBubble'; // Import the new ChatBubble component
 import { UserProfile, Task, TaskStatus, KitchenInventoryItem, SavedMealPlan, Recipe, SavedRecipe, WeeklyMealPlan, CookingTechniqueItem } from './types';
 
 const App: React.FC = () => {
@@ -313,12 +314,14 @@ const App: React.FC = () => {
             <p className="opacity-80">Local Butler AI: Connecting local needs with local helpers. For a true multi-user marketplace, Auth0 & backend are recommended.</p>
             <p>&copy; {new Date().getFullYear()} Local Butler AI. All rights reserved.</p>
             <p className="mt-1 opacity-80">Powered by Gemini API</p>
-          </footer>
+          </footer> {/* Correctly close the footer tag */}
+          <ChatBubble /> {/* Add ChatBubble after footer, before main closes */}
         </main>
       </div>
     </div>
   );
 };
+
 
 interface DashboardProps {
   userLoggedIn: boolean;

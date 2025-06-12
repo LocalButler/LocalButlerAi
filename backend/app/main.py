@@ -2,15 +2,20 @@ import logging
 import os
 import uuid # For generating session IDs
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
 from backend.app.config import settings
-from backend.app.agents.butler_agent import butler_agent  # Fix import
+from backend.app.agents import butler_agent as butler_agent_module  # Import module
 from backend.app.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema  # Fix import
 
-load_dotenv() # Load environment variables from .env file
+# Construct the path to the .env file in the 'backend' directory relative to this main.py file
+# __file__ is backend/app/main.py -> dirname is backend/app -> dirname is backend -> join with .env
+dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
+print(f"[DEBUG] Attempting to load .env file from: {dotenv_path}") # Debug print for .env path
+load_dotenv(dotenv_path=dotenv_path, override=True) # Load environment variables from specific .env file, override if already set by other means
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
@@ -20,6 +25,25 @@ app = FastAPI(
     description="Backend services for the Local Butler AI application, powered by ADK agents.",
     version="0.2.0" # Updated version for new architecture
 )
+
+# --- CORS Middleware Configuration ---
+# Origins that are allowed to make cross-origin requests.
+# For development, you might use ["*"], but for production, restrict this to your frontend's domain.
+# Example: origins = ["http://localhost:3000", "https://your-frontend-domain.com"]
+origins = [
+    "*"  # Allows all origins for development
+    # "http://localhost:3000", # Uncomment and adjust if your frontend runs on port 3000
+    # "http://localhost:5173", # Common for Vite React/Vue dev servers
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True, # Allows cookies to be included in requests
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Allows all standard methods
+    allow_headers=["*"]  # Allows all headers
+)
+
 
 # --- Pydantic Models for Request and Response ---
 class UserQueryInput(BaseModel):
@@ -36,6 +60,7 @@ class AgentResponseOutput(BaseModel):
 # --- API Key Check Function (remains the same) ---
 def get_api_key():
     api_key = os.getenv("LOCAL_BUTLER_API_KEY")
+    print(f"[DEBUG] LOCAL_BUTLER_API_KEY from os.getenv: '{api_key}'") # Temporary debug print
     if not api_key or api_key == "YOUR_GEMINI_API_KEY_HERE":
         logger.error("LOCAL_BUTLER_API_KEY is not set or is using the default placeholder.")
         raise HTTPException(
@@ -89,6 +114,13 @@ async def startup_event():
         # Depending on policy, you might want the app to not start or just log the error
 
 # --- API Endpoints (New - using ButlerAgent) ---
+
+@app.get("/", status_code=200)
+async def read_root():
+    """Provides a simple health check / welcome message for the root endpoint."""
+    logger.info("Root endpoint '/' was accessed.")
+    return {"message": "Welcome to the Local Butler AI Backend!", "status": "ok"}
+
 @app.post("/chat/", response_model=AgentResponseOutput)
 async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_api_key)):
     session_id = request.session_id or str(uuid.uuid4())
@@ -97,10 +129,12 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
     try:
         # Send message to the ButlerAgent
         # The ADK's agent.send_message_async handles session state internally based on session_id
-        agent_turn = await butler_agent.send_message_async(
+        print(f"[DEBUG] Type of butler_agent in chat_with_butler: {type(butler_agent_module.butler_agent)}")
+        print(f"[DEBUG] Attributes of butler_agent: {dir(butler_agent_module.butler_agent)}")
+        agent_turn = await butler_agent_module.butler_agent.send_message_async(
             message=request.query,
             session_id=session_id
-        )
+        ) # Revert to send_message_async
 
         text_response = agent_turn.output_text
         structured_data = None
@@ -135,6 +169,4 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
 if __name__ == "__main__":
-    import uvicorn
-    # Ensure reload is False or managed carefully in production
-    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True, log_level="info")
+    pass
