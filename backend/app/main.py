@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 
-from backend.app.config import settings
-from backend.app.agents import butler_agent as butler_agent_module  # Import module
-from backend.app.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema  # Fix import
+from app.config import settings
+from butler_agent_pkg.butler_agent import get_butler_agent  # Import function
+from butler_agent_pkg.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema  # Fix import
 
 # Construct the path to the .env file in the 'backend' directory relative to this main.py file
 # __file__ is backend/app/main.py -> dirname is backend/app -> dirname is backend -> join with .env
@@ -125,16 +125,19 @@ async def read_root():
 async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_api_key)):
     session_id = request.session_id or str(uuid.uuid4())
     logger.info(f"Received chat request for session '{session_id}': Query: '{request.query}'")
-
+    
     try:
         # Send message to the ButlerAgent
-        # The ADK's agent.send_message_async handles session state internally based on session_id
-        print(f"[DEBUG] Type of butler_agent in chat_with_butler: {type(butler_agent_module.butler_agent)}")
-        print(f"[DEBUG] Attributes of butler_agent: {dir(butler_agent_module.butler_agent)}")
-        agent_turn = await butler_agent_module.butler_agent.send_message_async(
-            message=request.query,
-            session_id=session_id
-        ) # Revert to send_message_async
+        # Use run_live instead of run_async for simpler synchronous execution
+        butler_agent = get_butler_agent()
+        print(f"[DEBUG] Type of butler_agent in chat_with_butler: {type(butler_agent)}")
+        print(f"[DEBUG] Attributes of butler_agent: {dir(butler_agent)}")
+        
+        # Use run_live for simpler execution
+        agent_turn = butler_agent.run_live(request.query)
+        
+        if not agent_turn:
+            raise HTTPException(status_code=500, detail="No response from agent")
 
         text_response = agent_turn.output_text
         structured_data = None

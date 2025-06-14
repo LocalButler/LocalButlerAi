@@ -15,7 +15,7 @@ const ChatBubble: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [sessionId, setSessionId] = useState<string | undefined>(undefined); // To maintain conversation context
+  const [sessionId, setSessionId] = useState<string | undefined>(undefined); // Let ADK service manage sessions
 
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
 
@@ -25,15 +25,10 @@ const ChatBubble: React.FC = () => {
 
   useEffect(scrollToBottom, [messages]);
 
-  // Load session ID from localStorage or generate a new one
+  // No need to generate our own session ID - let the ADK service handle it
   useEffect(() => {
-    let storedSessionId = localStorage.getItem('chatSessionId');
-    if (!storedSessionId) {
-      storedSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-      localStorage.setItem('chatSessionId', storedSessionId);
-    }
-    setSessionId(storedSessionId);
     // Optional: Load previous messages for this session if you implement persistence
+    setSessionId('managed-by-adk'); // Just a placeholder to indicate sessions are managed by ADK
   }, []);
 
 
@@ -70,10 +65,10 @@ const ChatBubble: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Use adkService to send the message
+      // Use adkService to send the message (no need to pass session_id, let service manage it)
       const response = await adkService.sendMessageToButler({
         message: userMessage.text,
-        session_id: sessionId,
+        // session_id is now managed by the ADK service automatically
       });
 
       let aiTextResponse = "Sorry, I couldn't understand that."; // Default response

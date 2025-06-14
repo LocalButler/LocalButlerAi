@@ -2,9 +2,9 @@
 // frontend/src/services/adkService.ts
 
 // Ensure this URL points to your ADK backend (FastAPI gateway)
-// For local development, this might be http://localhost:8080 or similar.
+// For local development, this might be http://localhost:8000 or similar.
 // For deployed, it will be your Cloud Run URL.
-const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://localhost:8001'; // Fallback for local dev (FastAPI backend on new port)
+const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://localhost:8000'; // ADK API server on port 8000
 
 interface ADKChatRequestPayload {
   message: string;
@@ -21,35 +21,106 @@ interface ADKServiceRequestPayload {
   session_id?: string;
 }
 
+// Standard ADK AgentRunRequest format
+interface AgentRunRequest {
+  appName: string;
+  userId: string;
+  sessionId: string;
+  newMessage: {
+    parts: Array<{
+      text: string;
+    }>;
+    role?: string;
+  };
+  streaming?: boolean;
+}
+
+// Standard ADK session creation request
+interface CreateSessionRequest {
+  appName: string;
+  userId: string;
+  state?: Record<string, any>;
+}
+
 // Generic response structure expected from the ADK backend
-// This should match the .outputs dictionary from ADK's ToolOutput
+// This should match the ADK Event structure
 export interface ADKAgentResponse {
   [key: string]: any; // Flexible structure for different agent responses
   error?: string; // Standard error field
 }
-
 
 export const isAdkBackendConfigured = (): boolean => {
   // Basic check, can be enhanced (e.g., ping endpoint)
   return !!ADK_API_BASE_URL && ADK_API_BASE_URL !== 'http://localhost:8080'; // Discourage default in "prod"
 };
 
-
 class ADKService {
   private baseUrl = ADK_API_BASE_URL;
+  private appName = 'butler_agent_pkg'; // Match our agent package name
+  private defaultUserId = 'user123'; // Default user ID for development
+  private currentSessionId: string | null = null; // Cache the current session ID
 
-  async sendMessageToButler(payload: ADKChatRequestPayload): Promise<ADKAgentResponse> {
+  // Create a new session with the ADK backend
+  private async createSession(userId: string = this.defaultUserId): Promise<string> {
     try {
-      const response = await fetch(`${this.baseUrl}/chat/`, {
+      const response = await fetch(`${this.baseUrl}/apps/${this.appName}/users/${userId}/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          // Add any other headers like Authorization if you implement auth
         },
         body: JSON.stringify({
-          query: payload.message, // Map frontend 'message' to backend 'query'
-          session_id: payload.session_id // Pass along session_id if present
+          state: {} // Initial empty state
         }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to create session: ${response.status}`);
+      }      const session = await response.json();
+      this.currentSessionId = session.id; // Cache the session ID
+      return session.id;
+    } catch (error) {
+      console.error("Error creating session:", error);
+      throw error;
+    }  }
+
+  // Get the current session ID (useful for the frontend to know the active session)
+  getCurrentSessionId(): string | null {
+    return this.currentSessionId;
+  }
+  
+  async sendMessageToButler(payload: ADKChatRequestPayload): Promise<ADKAgentResponse> {
+    try {
+      const userId = payload.user_id || this.defaultUserId;
+      let sessionId = payload.session_id;
+
+      // Ignore frontend-generated session IDs that don't match ADK format
+      // ADK session IDs are UUIDs, frontend generates strings like "session_timestamp_random"
+      if (sessionId && !sessionId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        sessionId = undefined; // Ignore invalid session ID format
+      }
+
+      // Use cached session if available, or create a new one
+      if (!sessionId) {
+        sessionId = this.currentSessionId || await this.createSession(userId);
+      }
+
+      const agentRequest: AgentRunRequest = {
+        appName: this.appName,
+        userId: userId,
+        sessionId: sessionId,
+        newMessage: {
+          parts: [{ text: payload.message }],
+          role: 'user'
+        },
+        streaming: false
+      };
+
+      const response = await fetch(`${this.baseUrl}/run`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(agentRequest),
       });
 
       if (!response.ok) {
@@ -57,30 +128,56 @@ class ADKService {
         console.error("ADK API Error (sendMessageToButler):", response.status, errorData);
         throw new Error(errorData.detail || `Request failed with status ${response.status}`);
       }
-      return response.json();
+      
+      const events = await response.json();
+      
+      // Process ADK events to extract the response
+      // Look for the final model response in the events
+      let responseText = '';
+      let hasError = false;
+      
+      for (const event of events) {
+        if (event.errorMessage) {
+          hasError = true;
+          responseText = event.errorMessage;
+          break;
+        }
+        
+        if (event.content && event.content.parts) {
+          for (const part of event.content.parts) {
+            if (part.text) {
+              responseText += part.text;
+            }
+          }
+        }
+      }
+      
+      if (hasError) {
+        return { error: responseText };
+      }
+      
+      return { 
+        text_response: responseText,
+        session_id: sessionId,
+        events: events // Include raw events for debugging
+      };
+      
     } catch (error) {
       console.error("Network or other error in sendMessageToButler:", error);
       // Ensure a consistent error response structure
       return { error: (error as Error).message || "Failed to communicate with the Butler AI service." };
     }
-  }
-
-  async createServiceRequestViaButler(payload: ADKServiceRequestPayload): Promise<ADKAgentResponse> {
+  }  async createServiceRequestViaButler(payload: ADKServiceRequestPayload): Promise<ADKAgentResponse> {
     try {
-      const response = await fetch(`${this.baseUrl}/api/service-request`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+      // For service requests, we can use the same sendMessageToButler method
+      // but format the message to indicate it's a service request
+      const serviceMessage = `Service Request: ${payload.service_type} - ${payload.details}`;
+      
+      return await this.sendMessageToButler({
+        message: serviceMessage,
+        user_id: payload.user_id,
+        session_id: payload.session_id
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ detail: "Unknown error structure" }));
-        console.error("ADK API Error (createServiceRequestViaButler):", response.status, errorData);
-        throw new Error(errorData.detail || `Service request failed with status ${response.status}`);
-      }
-      return response.json();
     } catch (error) {
       console.error("Network or other error in createServiceRequestViaButler:", error);
       return { error: (error as Error).message || "Failed to create service request via Butler AI." };
