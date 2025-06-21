@@ -12,7 +12,7 @@ import MyKitchenSection from './components/MyKitchenSection';
 import CalendarSection from './components/CalendarSection'; 
 import DietarySection from './components/DietarySection'; 
 import JournalAndRecipesSection from './components/MealPlanJournalSection'; // CORRECTED IMPORT PATH
-import ChatBubble from './components/ChatBubble'; // Import the new ChatBubble component
+import ChatBubbleFixed from './components/ChatBubbleFixed'; // Fixed chat bubble component
 import { UserProfile, Task, TaskStatus, KitchenInventoryItem, SavedMealPlan, Recipe, SavedRecipe, WeeklyMealPlan, CookingTechniqueItem } from './types';
 
 const App: React.FC = () => {
@@ -315,7 +315,7 @@ const App: React.FC = () => {
             <p>&copy; {new Date().getFullYear()} Local Butler AI. All rights reserved.</p>
             <p className="mt-1 opacity-80">Powered by Gemini API</p>
           </footer> {/* Correctly close the footer tag */}
-          <ChatBubble /> {/* Add ChatBubble after footer, before main closes */}
+          <ChatBubbleFixed /> {/* Fixed chat bubble component */}
         </main>
       </div>
     </div>

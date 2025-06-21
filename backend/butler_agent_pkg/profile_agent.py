@@ -3,6 +3,7 @@
 
 import logging
 from google.adk.agents import Agent
+from google.adk.models import Gemini
 
 from .config import settings
 from . import profile_prompts
@@ -15,8 +16,13 @@ logger = logging.getLogger(__name__)
 # for consistency in accessing and managing session/user data.
 user_profile_tools = butler_common_tools
 
+# Configure the Google LLM with API key for profile_agent
+profile_agent_llm_model = Gemini(
+    model=settings.DEFAULT_MODEL
+)
+
 user_profile_agent = Agent(
-    model=settings.DEFAULT_MODEL,
+    model=profile_agent_llm_model,
     name="UserProfileAgent",
     description="Manages user-specific data, including preferences (dietary, cuisine), interaction history, and other details necessary for personalization.",
     instruction=profile_prompts.USER_PROFILE_AGENT_INSTRUCTION,

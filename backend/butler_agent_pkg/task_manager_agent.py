@@ -3,6 +3,7 @@
 
 import logging
 from google.adk.agents import Agent
+from google.adk.models import Gemini
 from google.adk.tools.function_tool import FunctionTool
 
 from .config import settings
@@ -19,8 +20,13 @@ task_manager_tools = [
     FunctionTool(func=task_management_tools.list_tasks),
 ]
 
+# Configure the Google LLM with API key for task_manager_agent
+task_manager_agent_llm_model = Gemini(
+    model=settings.DEFAULT_MODEL
+)
+
 task_manager_agent = Agent(
-    model=settings.DEFAULT_MODEL,
+    model=task_manager_agent_llm_model,
     name="TaskManagerAgent",
     description="Manages the lifecycle of all tasks, including creation, status tracking, updates, and retrieval from the database.",
     instruction=task_manager_prompts.TASK_MANAGER_AGENT_INSTRUCTION,

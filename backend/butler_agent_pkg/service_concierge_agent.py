@@ -3,6 +3,7 @@
 
 import logging
 from google.adk.agents import Agent
+from google.adk.models import Gemini
 
 from .config import settings
 from . import service_concierge_prompts
@@ -13,8 +14,13 @@ logger = logging.getLogger(__name__)
 # For now, we'll start with no specific tools for this agent, it will primarily use LLM capabilities.
 service_concierge_tools = []
 
+# Configure the Google LLM with API key for ServiceConciergeAgent
+service_concierge_llm_model = Gemini(
+    model=settings.DEFAULT_MODEL
+)
+
 service_concierge_agent = Agent(
-    model=settings.DEFAULT_MODEL,
+    model=service_concierge_llm_model,
     name="ServiceConciergeAgent",
     description="Handles requests for services like delivery, appointments, and other errands. Translates user needs into actionable tasks.",
     instruction=service_concierge_prompts.SERVICE_CONCIERGE_AGENT_INSTRUCTION,

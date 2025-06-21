@@ -6,6 +6,7 @@ import logging
 from typing import Optional
 from google.adk.agents import Agent
 from google.adk.tools import ToolContext # Added for tool_context type hint
+from google.adk.models import Gemini
 
 from ...config import settings
 from ...shared_libraries import types # types.py now has RecipeAndShoppingListOutput
@@ -70,13 +71,17 @@ def check_inventory_and_create_shopping_list_wrapper(recipe_ingredients_data: st
 # RecipeAgent tools - pass functions directly
 recipe_agent_tools = [
     get_memory_wrapper,
-    # check_inventory_and_create_shopping_list_wrapper is no longer directly used by RecipeAgent's primary flow
-    # It can be called by ButlerAgent directly if a shopping list is needed for an existing recipe.
+    # check_inventory_and_create_shopping_list_wrapper is no longer directly used by RecipeAgent's primary flow    # It can be called by ButlerAgent directly if a shopping list is needed for an existing recipe.
     # Add other tools if RecipeAgent needs them, e.g., a specialized food API tool
 ]
 
+# Configure the Google LLM with API key for RecipeAgent
+recipe_llm_model = Gemini(
+    model=settings.DEFAULT_MODEL
+)
+
 recipe_agent = Agent(
-    model=settings.DEFAULT_MODEL,
+    model=recipe_llm_model,
     name="RecipeAgent",
     description="A specialized agent for finding or generating recipes. It outputs structured recipe data and a conversational message.",
     instruction=prompts.RECIPE_AGENT_INSTRUCTION,

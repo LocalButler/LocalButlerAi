@@ -151,8 +151,8 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
         if runner is None:
             logger.error("ADK runner is not initialized.")
             raise HTTPException(status_code=500, detail="Agent runner not initialized")
-        
-        logger.info("Using ADK runner to process message...")
+          logger.info("Using ADK runner to process message...")
+        # Create session using ADK session service like the LLM Auditor sample
         user_id = "frontend_user"
 
         # Create session 
