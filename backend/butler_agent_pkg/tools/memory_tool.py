@@ -14,13 +14,13 @@ from ..shared_libraries.types import UserProfile, Ingredient
 
 logger = logging.getLogger(__name__)
 
-def memorize(key: str, value: str, tool_context: ToolContext) -> Dict[str, str]:
+def memorize(key: str, value: str, tool_context: ToolContext) -> dict:
     """
     Memorize a piece of information as a key-value pair in the session state.
     The value is expected to be a string. If it's a string representing structured data (e.g., a dictionary or list),
-    a UserProfile, a list, or other structures, it will be parsed and stored as such.
-    Otherwise, it's stored as a plain string.
+    it will be parsed and stored as such. Otherwise, it's stored as a plain string.
     If the key already exists, its value will be overwritten.
+    Returns a dict with a status message.
     """
     session_state = tool_context.state
     processed_value: Any = value  # Default to storing as a plain string
@@ -38,12 +38,13 @@ def memorize(key: str, value: str, tool_context: ToolContext) -> Dict[str, str]:
     return {"status": f"Successfully memorized '{key}'."}
 
 
-def memorize_list_item(key: str, item: str, tool_context: ToolContext) -> Dict[str, str]:
+def memorize_list_item(key: str, item: str, tool_context: ToolContext) -> dict:
     """
     Adds an item to a list in the session state.
     The item is expected to be a string, potentially a string representation of structured data.
     If the key does not exist, a new list is created.
     If the (potentially parsed) item already exists in the list, it's not added again.
+    Returns a dict with a status message.
     """
     session_state = tool_context.state
     processed_item: Any = item
@@ -65,10 +66,11 @@ def memorize_list_item(key: str, item: str, tool_context: ToolContext) -> Dict[s
         return {"status": f"Item already exists in list '{key}'."}
 
 
-def forget_list_item(key: str, item: str, tool_context: ToolContext) -> Dict[str, str]:
+def forget_list_item(key: str, item: str, tool_context: ToolContext) -> dict:
     """
     Removes an item from a list in the session state.
     The item is expected to be a string, potentially a string representation of structured data.
+    Returns a dict with a status message.
     """
     session_state = tool_context.state
     processed_item: Any = item
@@ -91,11 +93,12 @@ def forget_list_item(key: str, item: str, tool_context: ToolContext) -> Dict[str
         return {"status": f"List '{key}' not found or is not a list."}
 
 
-def get_memory(key: str, tool_context: ToolContext) -> Dict[str, Any]: # Return type changed to Dict[str, Any]
+def get_memory(key: str, tool_context: ToolContext) -> dict:
     """
     Retrieves a piece of information from the session state.
-    Complex objects (dicts, lists, UserProfile) are returned as string representations.
+    Complex objects (dicts, lists) are returned as string representations.
     Simple types (str, int, float, bool, None) are returned as is.
+    Returns a dict with the value or a not-found status.
     """
     session_state = tool_context.state
     if key in session_state:

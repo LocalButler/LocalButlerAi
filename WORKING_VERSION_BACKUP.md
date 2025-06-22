@@ -7,8 +7,8 @@
 ## 🚀 What's Working Perfectly:
 
 ### Backend (ADK Server)
-- **Server:** `http://localhost:8001`
-- **Command:** `adk api_server --port=8001 --allow_origins=http://localhost:5173 agents`
+- **Server:** `http://localhost:8000`
+- **Command:** `adk api_server --port=8000 --allow_origins=http://localhost:5173 agents`
 - **Status:** ✅ Standard ADK API server running
 - **Endpoints:**
   - `/list-apps` → Returns `["butler"]`
@@ -35,7 +35,7 @@
 1. **Backend:**
    ```bash
    cd backend
-   adk api_server --port=8001 --allow_origins=http://localhost:5173 agents
+   adk api_server --port=8000 --allow_origins=http://localhost:5173 agents
    ```
 
 2. **Frontend:**
@@ -64,7 +64,7 @@
 
 ```powershell
 # Test session creation
-$sessionResponse = Invoke-WebRequest -Uri "http://localhost:8001/apps/butler/users/frontend_user/sessions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"messages":[]}'
+$sessionResponse = Invoke-WebRequest -Uri "http://localhost:8000/apps/butler/users/frontend_user/sessions" -Method POST -Headers @{"Content-Type"="application/json"} -Body '{"messages":[]}'
 
 # Test message sending
 $messageBody = @{
@@ -78,7 +78,7 @@ $messageBody = @{
   'streaming' = $false
 } | ConvertTo-Json -Depth 5
 
-Invoke-WebRequest -Uri "http://localhost:8001/run" -Method POST -Headers @{"Content-Type"="application/json"} -Body $messageBody
+Invoke-WebRequest -Uri "http://localhost:8000/run" -Method POST -Headers @{"Content-Type"="application/json"} -Body $messageBody
 ```
 
 ## ⚠️ IMPORTANT: 

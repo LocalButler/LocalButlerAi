@@ -28,6 +28,8 @@ from google.adk.runners import InMemoryRunner
 from google.genai.types import Part, UserContent
 from butler_agent_pkg.butler_agent import butler_agent
 from butler_agent_pkg.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema
+from app.api.v1.routers.agentz_router import router as agentz_router
+from app.api.v1.routers.agentz_get_router import router as agentz_get_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
@@ -47,23 +49,14 @@ except Exception as e:
     logger.error(f"Failed to initialize ADK runner: {e}")
 
 # --- CORS Middleware Configuration ---
-# Origins that are allowed to make cross-origin requests.
-# For development, you might use ["*"], but for production, restrict this to your frontend's domain.
-# Example: origins = ["http://localhost:3000", "https://your-frontend-domain.com"]
-origins = [
-    "*"  # Allows all origins for development
-    # "http://localhost:3000", # Uncomment and adjust if your frontend runs on port 3000
-    # "http://localhost:5173", # Common for Vite React/Vue dev servers
-]
-
+# Allow all origins for development (not recommended for production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True, # Allows cookies to be included in requests
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Allows all standard methods
-    allow_headers=["*"]  # Allows all headers
+    allow_origins=["*"],  # Allows all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 # --- Pydantic Models for Request and Response ---
 class UserQueryInput(BaseModel):
@@ -202,6 +195,9 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
+app.include_router(agentz_router, prefix="/api/v1")
+app.include_router(agentz_get_router, prefix="/api/v1")
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

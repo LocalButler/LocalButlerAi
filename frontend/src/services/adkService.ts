@@ -3,7 +3,7 @@
 // Ensure this URL points to your ADK backend (FastAPI gateway)
 // For local development, this might be http://localhost:8080 or similar.
 // For deployed, it will be your Cloud Run URL.
-const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://127.0.0.1:8001'; // Updated to use port 8001 to match backend task
+const ADK_API_BASE_URL = process.env.REACT_APP_ADK_API_URL || 'http://127.0.0.1:8000'; // Updated to use port 8000 to match backend task
 
 interface ADKChatRequestPayload {
   message: string;

@@ -4,6 +4,7 @@ import asyncio
 import sys
 import os
 import uuid
+import pytest
 
 # Add the backend directory to Python path for imports
 backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -94,6 +95,8 @@ async def test_fastapi_simulation():
     print("Testing FastAPI simulation...")
     result = await simulate_fastapi_request("Hello, this is a test message")
     print(f"Result: {result}")
+
+pytestmark = pytest.mark.asyncio
 
 if __name__ == "__main__":
     asyncio.run(test_fastapi_simulation())

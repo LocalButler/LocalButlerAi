@@ -40,7 +40,7 @@ const TaskItem: React.FC<{
 
 
   const handleStatusChange = (newStatus: TaskStatus, reason?: string) => {
-    let updatedTask = { ...task, status: newStatus };
+    const updatedTask = { ...task, status: newStatus };
     if (reason) {
       updatedTask.cancellationReason = reason;
     }

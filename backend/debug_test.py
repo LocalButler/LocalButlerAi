@@ -3,6 +3,7 @@
 import asyncio
 import sys
 import os
+import pytest
 
 # Add the backend directory to Python path for imports
 backend_dir = os.path.dirname(os.path.abspath(__file__))
@@ -21,6 +22,8 @@ os.environ['GEMINI_API_KEY'] = settings.GEMINI_API_KEY
 from google.adk.runners import InMemoryRunner
 from google.genai.types import Part, UserContent
 from butler_agent_pkg.butler_agent import butler_agent
+
+pytestmark = pytest.mark.asyncio
 
 async def test_minimal():
     try:

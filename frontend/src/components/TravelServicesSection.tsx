@@ -55,7 +55,7 @@ const TravelServicesSection: React.FC<TravelServicesSectionProps> = ({ userProfi
     setIsLoadingInitial(true);
     setChatMessages([]); // Clear previous chat
 
-    let prompt = `You are a luxury travel concierge AI. The user requires assistance with their travel plans.
+    const prompt = `You are a luxury travel concierge AI. The user requires assistance with their travel plans.
 Itinerary Details:
 ${itinerary || "Not specified."}
 

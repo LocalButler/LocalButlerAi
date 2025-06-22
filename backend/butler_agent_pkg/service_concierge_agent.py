@@ -7,12 +7,18 @@ from google.adk.models import Gemini
 
 from .config import settings
 from . import service_concierge_prompts
+from .tools import memory_tool
+from google.adk.tools.function_tool import FunctionTool
 
 logger = logging.getLogger(__name__)
 
-# Define any tools specific to the ServiceConciergeAgent here if needed in the future
-# For now, we'll start with no specific tools for this agent, it will primarily use LLM capabilities.
-service_concierge_tools = []
+# Attach memory tools so the agent can store and recall user details
+service_concierge_tools = [
+    FunctionTool(func=memory_tool.memorize),
+    FunctionTool(func=memory_tool.memorize_list_item),
+    FunctionTool(func=memory_tool.forget_list_item),
+    FunctionTool(func=memory_tool.get_memory),
+]
 
 # Configure the Google LLM with API key for ServiceConciergeAgent
 service_concierge_llm_model = Gemini(

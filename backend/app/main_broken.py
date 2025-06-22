@@ -204,4 +204,4 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8001)
+    uvicorn.run(app, host="127.0.0.1", port=8000)

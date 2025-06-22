@@ -58,7 +58,7 @@ const ChatBubble: React.FC = () => {
 
   const createSession = async (): Promise<string> => {
     console.log('Creating new ADK session...');
-    const response = await fetch('http://127.0.0.1:8001/apps/butler/users/frontend_user/sessions', {
+    const response = await fetch('http://127.0.0.1:8000/apps/butler/users/frontend_user/sessions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -98,7 +98,7 @@ const ChatBubble: React.FC = () => {
 
   const sendMessage = async (messageText: string, currentSessionId: string): Promise<string> => {
     console.log('Sending message to ADK...');
-    const response = await fetch('http://127.0.0.1:8001/run', {
+    const response = await fetch('http://127.0.0.1:8000/run', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

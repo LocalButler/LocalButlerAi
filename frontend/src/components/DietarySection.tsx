@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import { generateText, parseGeminiJsonResponse, isApiKeySet } from '../services/geminiService';
 import { WeeklyMealPlan, GroceryListCategory, GroceryItem, UserProfile, WithUserProfile, Task, TaskStatus, KitchenInventoryItem, Recipe, RecipeIngredient, RealisticShoppingListItem, YouTubeRecommendation, CookingTechniqueItem } from '../types'; 
@@ -202,7 +201,7 @@ Example: { "Produce": ["Apples (3)", "Spinach (1 bag)", "Berries (1 punnet)"], "
 
     try {
       const responseText = await generateText(prompt, "You are an efficient grocery list creator for an AI journal.", true, userProfile);
-      let parsedList = parseGeminiJsonResponse<any>(responseText); 
+      const parsedList = parseGeminiJsonResponse<any>(responseText); 
       
       if (parsedList) {
         const standardizedList: GroceryListCategory = {};
@@ -615,15 +614,28 @@ Crucially, include the "youtubeRecommendations" field (for the overall dish) in 
   }, [recipeShoppingListForModal, generatedRecipe, onAddTask]);
 
   const handleSaveGeneratedRecipeToBookLocal = useCallback(() => {
-    if (generatedRecipe) { 
+    if (generatedRecipe) {
+        // Frontend validation: check if generatedRecipe is a valid JSON object and has required fields
+        try {
+            const recipeStr = JSON.stringify(generatedRecipe);
+            const parsed = JSON.parse(recipeStr);
+            // Basic required fields check (customize as needed)
+            if (!parsed.name || !parsed.ingredients || !Array.isArray(parsed.ingredients)) {
+                setRecipeError("Recipe is missing required fields or is not in valid format. Please review before saving.");
+                return;
+            }
+        } catch (e) {
+            setRecipeError("Recipe is not valid JSON and cannot be saved. Please review before saving.");
+            return;
+        }
         onSaveRecipeToBook(generatedRecipe, "Copycat AI");
         setRecipeShoppingListNotification(null); // Clear shopping list notification
         setRecipeSaveSuccessMessage(`Recipe "${generatedRecipe.name}" saved to your Journal & Recipes!`);
-        setRecipeError(null); 
+        setRecipeError(null);
         setGeneratedRecipe(null);
         setCopycatDishName('');
         setRequestedServings('');
-         setTimeout(() => setRecipeSaveSuccessMessage(''), 5000); 
+        setTimeout(() => setRecipeSaveSuccessMessage(''), 5000);
     }
   }, [generatedRecipe, onSaveRecipeToBook]);
   
@@ -729,8 +741,7 @@ This means you need to:
 
 Output the *complete, updated recipe* in the exact same JSON format as the original (keys: "name", "description", "ingredients", "instructions", "cookingTechniques", "youtubeRecommendations", "prepTime", "cookTime", "servings", "imageUrl").
 Ensure the "servings" field reflects the original servings unless the substitution logically changes it.
-Crucially, include the "youtubeRecommendations" field (for overall dish) in your JSON output, preserving the original recommendations. If an image existed, preserve the "imageUrl" field with '${IMAGE_PLACEHOLDER_STRING}'.
-`;
+Crucially, include the "youtubeRecommendations" field (for overall dish) in your JSON output, preserving the original recommendations. If an image existed, preserve the "imageUrl" field with '${IMAGE_PLACEHOLDER_STRING}'.`;
 
     try {
         const responseText = await generateText(prompt, "You are a recipe modification expert. Update the recipe JSON to incorporate the suggested ingredient substitution and adjust cooking techniques. Preserve YouTube recommendations and image presence.", true, userProfile);

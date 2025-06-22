@@ -19,6 +19,7 @@ from .inventory_agent import inventory_agent # Import InventoryAgent
 from .dietary_agent import dietary_agent # Import DietaryAgent
 from .shared_libraries import constants
 from .shared_libraries.types import UserProfile, Ingredient
+from .agent_z import agent_z # Import Agent Z
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,8 @@ butler_agent = Agent(
         task_manager_agent, # Add TaskManagerAgent as a sub-agent
         persona_generation_agent, # Add PersonaGenerationAgent as a sub-agent
         inventory_agent, # Add InventoryAgent as a sub-agent
-        dietary_agent # Add DietaryAgent as a sub-agent
+        dietary_agent, # Add DietaryAgent as a sub-agent
+        agent_z # Register Agent Z as a sub-agent
     ],
     before_agent_callback=memory_tool.initialize_session_state,
     # enable_reflection=True, # Consider enabling for more complex reasoning if needed
