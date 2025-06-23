@@ -6,7 +6,7 @@ import { useMealPlanStore } from '../stores/useMealPlanStore';
 import { SavedMealPlan } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
-const API_KEY = process.env.GEMINI_API_KEY;
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 console.log("API_KEY:", API_KEY);
 
 let ai: GoogleGenAI | null = null;
@@ -107,7 +107,7 @@ export async function generateText(
   const interactionId = uuidv4();
   const timestamp = new Date().toISOString();
 
-  const contextualPrompt = addUserContextToPrompt(prompt, userProfile || user);
+  const contextualPrompt = addUserContextToPrompt(prompt, userProfile);
 
   try {
     const response: GenerateContentResponse = await ai.models.generateContent({
@@ -151,7 +151,7 @@ export async function generateTextWithImage(
   const interactionId = uuidv4();
   const timestamp = new Date().toISOString();
 
-  const contextualPrompt = addUserContextToPrompt(prompt, userProfile || user);
+  const contextualPrompt = addUserContextToPrompt(prompt, userProfile);
 
   const imagePart: Part = {
     inlineData: {

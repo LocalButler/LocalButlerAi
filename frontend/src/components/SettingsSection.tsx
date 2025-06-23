@@ -1,44 +1,85 @@
-
-import React from 'react';
-import { isApiKeySet } from '../services/geminiService';
+import React, { useState } from 'react';
 import SectionContainer from './SectionContainer';
 import { CogIcon } from './Icons';
+import { useAuth0 } from '@auth0/auth0-react';
 
 const SettingsSection: React.FC = () => {
-  const apiKeyIsSet = isApiKeySet();
+  const { user, isAuthenticated, logout } = useAuth0();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editTagline, setEditTagline] = useState('');
+
+  const handleSave = () => {
+    // In a real app, you would send this to your backend or update Auth0 profile
+    setIsEditing(false);
+  };
 
   return (
     <SectionContainer title="Settings" icon={<CogIcon className="w-8 h-8" />}>
-      <div className="p-4 bg-white rounded-lg shadow animate-fadeIn">
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">Gemini API Key Status</h3>
-        {apiKeyIsSet ? (
-          <div className="flex items-center p-3 bg-green-100 text-green-700 rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Gemini API Key is configured and active. AI features should be operational.</span>
+      {isAuthenticated && user && (
+        <div className="flex items-center gap-4 mb-6 p-4 bg-blue-50 rounded-lg shadow animate-fadeIn">
+          {user.picture ? (
+            <img src={user.picture} alt="Profile" className="w-14 h-14 rounded-full border-2 border-primary" />
+          ) : (
+            <div className="w-14 h-14 rounded-full bg-primary text-white flex items-center justify-center text-2xl font-bold border-2 border-primary">
+              {user.name ? user.name[0] : 'A'}
+            </div>
+          )}
+          <div className="flex-1">
+            {isEditing ? (
+              <>
+                <input
+                  className="block w-full mb-2 px-2 py-1 border rounded bg-gray-100"
+                  value={user.name || ''}
+                  disabled
+                  placeholder="Name"
+                />
+                <input
+                  className="block w-full mb-2 px-2 py-1 border rounded bg-gray-100"
+                  value={user.email || ''}
+                  disabled
+                  placeholder="Email"
+                />
+                <input
+                  className="block w-full mb-2 px-2 py-1 border rounded"
+                  value={editTagline}
+                  onChange={e => setEditTagline(e.target.value)}
+                  placeholder="Tagline / Role (e.g. Digital Nomad)"
+                />
+                <button
+                  onClick={handleSave}
+                  className="mr-2 text-xs bg-green-500 hover:bg-green-700 text-white px-3 py-1 rounded"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => setIsEditing(false)}
+                  className="text-xs bg-gray-300 hover:bg-gray-400 text-gray-800 px-3 py-1 rounded"
+                >
+                  Cancel
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="font-bold text-lg text-primary">{user.name}</div>
+                <div className="text-sm text-gray-600">{user.email}</div>
+                <div className="text-sm text-blue-700 italic mb-2">{editTagline || <span className='text-gray-400'>No tagline yet</span>}</div>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="mt-2 mr-2 text-xs bg-blue-500 hover:bg-blue-700 text-white px-3 py-1 rounded"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                  className="mt-2 text-xs bg-red-500 hover:bg-red-700 text-white px-3 py-1 rounded"
+                >
+                  Log Out
+                </button>
+              </>
+            )}
           </div>
-        ) : (
-          <div className="flex items-center p-3 bg-red-100 text-red-700 rounded-md">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>Gemini API Key is NOT configured. AI features will be disabled. Please set the <code>API_KEY</code> environment variable for this application to function correctly.</span>
-          </div>
-        )}
-        <p className="mt-4 text-sm text-gray-600">
-          This application requires a Google Gemini API key to utilize its artificial intelligence capabilities. 
-          The key must be provided as an environment variable named <code>API_KEY</code> in the environment where this application is run.
-          This application does not store your API key or ask for it directly in the user interface. Ensure the environment variable is correctly set up for the AI features to work.
-        </p>
-      </div>
-       <div className="mt-6 p-4 bg-white rounded-lg shadow animate-fadeIn">
-        <h3 className="text-lg font-semibold text-gray-700 mb-2">Authentication & Data</h3>
-         <p className="text-sm text-gray-600">
-          Currently, user profile information is stored in your browser's local storage for personalization. 
-          For a production environment with multiple users or persistent data across devices, integration with an authentication service like Auth0 and a backend database would be necessary. This would enable secure user accounts and data storage.
-        </p>
-      </div>
+        </div>
+      )}
     </SectionContainer>
   );
 };

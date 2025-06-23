@@ -1,5 +1,5 @@
-
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Task, TaskStatus } from '../types';
 import SectionContainer from './SectionContainer';
 import Modal from './Modal'; // Import Modal
@@ -9,6 +9,8 @@ interface MarketplaceSectionProps {
   tasks: Task[];
   onUpdateTask: (updatedTask: Task) => void;
 }
+
+const PROVIDER_PASSWORD = import.meta.env.VITE_PROVIDER_PASSWORD;
 
 const MarketplaceTaskItem: React.FC<{ task: Task; onUpdateTask: (updatedTask: Task) => void; }> = ({ task, onUpdateTask }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -112,9 +114,66 @@ const MarketplaceTaskItem: React.FC<{ task: Task; onUpdateTask: (updatedTask: Ta
 };
 
 const MarketplaceSection: React.FC<MarketplaceSectionProps> = ({ tasks, onUpdateTask }) => {
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordInput, setPasswordInput] = useState('');
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check localStorage for provider access
+    if (localStorage.getItem('provider_marketplace_access') === 'true') {
+      setIsAuthorized(true);
+    } else {
+      setShowPasswordModal(true);
+    }
+  }, []);
+
+  const handlePasswordSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === PROVIDER_PASSWORD) {
+      setIsAuthorized(true);
+      setShowPasswordModal(false);
+      localStorage.setItem('provider_marketplace_access', 'true');
+      setError('');
+    } else {
+      setError('Incorrect password. Please try again.');
+    }
+  };
+
+  const handleModalClose = () => {
+    setShowPasswordModal(false);
+    navigate('/'); // Redirect to home or another safe page
+  };
+
   const openTasks = useMemo(() => {
     return tasks.filter(task => task.status === TaskStatus.OPEN_FOR_OFFERS);
   }, [tasks]);
+
+  if (!isAuthorized) {
+    return (
+      <Modal
+        isOpen={showPasswordModal}
+        onClose={handleModalClose}
+        title="Provider Login Required"
+        footer={null}
+      >
+        <form onSubmit={handlePasswordSubmit}>
+          <label htmlFor="provider-password" className="block text-sm font-medium text-gray-700 mb-2">Enter Provider Password</label>
+          <input
+            type="password"
+            id="provider-password"
+            value={passwordInput}
+            onChange={e => setPasswordInput(e.target.value)}
+            className="block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary mb-3"
+            autoFocus
+          />
+          {error && <p className="text-red-600 text-xs mb-2">{error}</p>}
+          <button type="submit" className="w-full px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-blue-700 rounded-md">Login</button>
+        </form>
+      </Modal>
+    );
+  }
 
   return (
     <SectionContainer title="Local Task Marketplace" icon={<UsersIcon className="w-8 h-8" />}>
