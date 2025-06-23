@@ -4,7 +4,7 @@ FROM python:3.11-slim
 WORKDIR /app
 
 COPY backend/ ./backend
-COPY butler_agent_pkg/ ./butler_agent_pkg
+COPY backend/butler_agent_pkg/ ./butler_agent_pkg
 COPY backend/agents/ ./agents
 COPY backend/requirements.txt ./requirements.txt
 
