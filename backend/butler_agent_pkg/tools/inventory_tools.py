@@ -4,7 +4,7 @@ These tools interact with a mocked inventory database.
 """
 
 import logging
-from typing import List, Dict, Any, Union
+from typing import List, Dict, Any
 
 logger = logging.getLogger(__name__)
 
@@ -18,22 +18,17 @@ mock_inventory_db: Dict[str, List[Dict[str, Any]]] = {
     ]
 }
 
-def add_item_to_inventory(user_id: str, item_name: str, quantity: Union[int, float], unit: str) -> Dict[str, Any]:
+def add_item_to_inventory(user_id: str, item_name: str, quantity: float, unit: str) -> dict:
     """Adds a specified quantity of an item to the user's inventory.
-
-    If the item with the same name and unit already exists, its quantity is updated.
-    Otherwise, a new item is added.
 
     Args:
         user_id (str): The unique identifier for the user.
         item_name (str): The name of the item to add (e.g., 'flour', 'eggs').
-        quantity (Union[int, float]): The amount of the item to add.
+        quantity (float): The amount of the item to add (use float for both int and float values).
         unit (str): The unit of measurement for the item (e.g., 'kg', 'pieces', 'liter').
 
     Returns:
-        Dict[str, Any]: A dictionary containing the status of the operation and a message.
-                         Example: {'status': 'success', 'message': '2 kg of flour added to inventory.'}
-                         Example: {'status': 'success', 'message': 'flour quantity updated to 2.5 kg.'}
+        dict: Contains the status of the operation and a message.
     """
     logger.info(f"Attempting to add {quantity} {unit} of {item_name} for user {user_id}")
     if user_id not in mock_inventory_db:
@@ -49,23 +44,17 @@ def add_item_to_inventory(user_id: str, item_name: str, quantity: Union[int, flo
     logger.info(f"Added {quantity} {unit} of {item_name} to inventory for user {user_id}")
     return {"status": "success", "message": f"{quantity} {unit} of {item_name} added to inventory."}
 
-def remove_item_from_inventory(user_id: str, item_name: str, quantity: Union[int, float], unit: str) -> Dict[str, Any]:
+def remove_item_from_inventory(user_id: str, item_name: str, quantity: float, unit: str) -> dict:
     """Removes a specified quantity of an item from the user's inventory.
-
-    If the quantity to remove is greater than or equal to the available quantity,
-    the item is completely removed from the inventory.
 
     Args:
         user_id (str): The unique identifier for the user.
         item_name (str): The name of the item to remove.
-        quantity (Union[int, float]): The amount of the item to remove.
+        quantity (float): The amount of the item to remove (use float for both int and float values).
         unit (str): The unit of measurement for the item.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the status of the operation and a message.
-                         Example: {'status': 'success', 'message': 'Removed 1 kg of flour. Remaining: 1.5 kg.'}
-                         Example: {'status': 'error', 'message': 'Item flour (kg) not found in inventory.'}
-                         Example: {'status': 'error', 'message': 'Insufficient quantity of flour. Available: 0.5 kg.'}
+        dict: Contains the status of the operation and a message.
     """
     logger.info(f"Attempting to remove {quantity} {unit} of {item_name} for user {user_id}")
     if user_id not in mock_inventory_db or not mock_inventory_db[user_id]:
@@ -104,7 +93,7 @@ def remove_item_from_inventory(user_id: str, item_name: str, quantity: Union[int
     # This case should ideally not be reached if logic is correct, but as a fallback:
     return {"status": "error", "message": "An unexpected error occurred during item removal."}
 
-def check_item_in_inventory(user_id: str, item_name: str) -> Dict[str, Any]:
+def check_item_in_inventory(user_id: str, item_name: str) -> dict:
     """Checks if an item exists in the user's inventory and returns its details.
 
     Args:
@@ -112,9 +101,7 @@ def check_item_in_inventory(user_id: str, item_name: str) -> Dict[str, Any]:
         item_name (str): The name of the item to check.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the status, an optional item dictionary if found, and a message.
-                         Example (found): {'status': 'found', 'item': {'item_name': 'flour', 'quantity': 1.5, 'unit': 'kg'}, 'message': 'flour is in your inventory.'}
-                         Example (not found): {'status': 'not_found', 'message': 'salt not found in inventory.'}
+        dict: Contains the status, an optional item dictionary if found, and a message.
     """
     logger.info(f"Checking for item {item_name} for user {user_id}")
     if user_id not in mock_inventory_db:
@@ -129,16 +116,14 @@ def check_item_in_inventory(user_id: str, item_name: str) -> Dict[str, Any]:
     logger.info(f"Item {item_name} not found for user {user_id}")
     return {"status": "not_found", "message": f"{item_name} not found in inventory."}
 
-def list_inventory_items(user_id: str) -> Dict[str, Any]:
+def list_inventory_items(user_id: str) -> dict:
     """Lists all items currently in the user's inventory.
 
     Args:
         user_id (str): The unique identifier for the user.
 
     Returns:
-        Dict[str, Any]: A dictionary containing the status, a list of inventory items, and a message.
-                         Example: {'status': 'success', 'inventory': [{'item_name': 'flour', 'quantity': 1.5, 'unit': 'kg'}], 'message': 'Here are your inventory items.'}
-                         Example (empty): {'status': 'empty', 'inventory': [], 'message': 'Your inventory is currently empty.'}
+        dict: Contains the status, a list of inventory items, and a message.
     """
     logger.info(f"Listing inventory for user {user_id}")
     if user_id not in mock_inventory_db or not mock_inventory_db[user_id]:

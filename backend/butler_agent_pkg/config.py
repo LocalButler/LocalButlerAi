@@ -10,7 +10,6 @@ class AppSettings(BaseSettings):
     """Configuration settings for the Local Butler AI backend."""
 
     GEMINI_API_KEY: str
-    LOCAL_BUTLER_API_KEY: str # Add this line
     DEFAULT_MODEL: str = "gemini-2.0-flash"
     LOG_LEVEL: str = "INFO"
 
@@ -30,7 +29,7 @@ if settings.GEMINI_API_KEY:
     logger.info("Gemini API key found in configuration.")
 else:
     logger.warning(
-        "Gemini API key is not configured. Please set the LOCAL_BUTLER_API_KEY environment variable "
+        "Gemini API key is not configured. Please set the GEMINI_API_KEY environment variable "
         "or update it in your .env file. The application might not function correctly without it."
     )
 

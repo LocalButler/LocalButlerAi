@@ -7,25 +7,36 @@ interacting with the inventory tools.
 
 import logging
 from google.adk.agents import Agent
+from google.adk.models import Gemini
 from google.adk.tools.function_tool import FunctionTool
 
 from .config import settings
 from .inventory_prompts import INVENTORY_AGENT_INSTRUCTION
-from .tools import inventory_tools
+from .tools import inventory_tools, memory_tool
 
 logger = logging.getLogger(__name__)
 
 # Define ADK tools based on the functions in inventory_tools.py
 # Ensure the function names match exactly with those defined in inventory_tools.py
+# Attach memory tools so the agent can store and recall user/session details
 inventory_agent_tools = [
     FunctionTool(func=inventory_tools.add_item_to_inventory),
     FunctionTool(func=inventory_tools.remove_item_from_inventory),
     FunctionTool(func=inventory_tools.check_item_in_inventory),
     FunctionTool(func=inventory_tools.list_inventory_items),
+    FunctionTool(func=memory_tool.memorize),
+    FunctionTool(func=memory_tool.memorize_list_item),
+    FunctionTool(func=memory_tool.forget_list_item),
+    FunctionTool(func=memory_tool.get_memory),
 ]
 
+# Configure the Google LLM with API key for inventory_agent
+inventory_agent_llm_model = Gemini(
+    model=settings.DEFAULT_MODEL
+)
+
 inventory_agent = Agent(
-    model=settings.DEFAULT_MODEL,
+    model=inventory_agent_llm_model,
     name="InventoryAgent",
     description="Manages the user's kitchen inventory, including adding, removing, checking, and listing items.",
     instruction=INVENTORY_AGENT_INSTRUCTION,

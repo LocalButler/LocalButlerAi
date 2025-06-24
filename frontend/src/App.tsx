@@ -1,22 +1,26 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Link, useLocation } from 'react-router-dom';
-import { HomeIcon, BriefcaseIcon, CogIcon, UserCircleIcon, ChecklistIcon, UsersIcon, AirplaneIcon, CalendarIcon, BuildingStorefrontIcon, ClipboardListIcon, CameraIcon, BookOpenIcon, PencilIcon } from './components/Icons'; // Added PencilIcon
+import { HomeIcon, BriefcaseIcon, CogIcon, UserCircleIcon, ChecklistIcon, UsersIcon, AirplaneIcon, CalendarIcon, BuildingStorefrontIcon, ClipboardListIcon, CameraIcon, BookOpenIcon, PencilIcon } from './components/Icons';
 import ServiceOrganizerSection from './components/ServiceOrganizerSection';
 import SettingsSection from './components/SettingsSection';
 import UserProfileSection from './components/UserProfileSection';
 import TravelServicesSection from './components/TravelServicesSection';
-import MyTasksSection from './components/MyTasksSection'; 
+import MyTasksSection from './components/MyTasksSection';
 import MarketplaceSection from './components/MarketplaceSection';
-import MyKitchenSection from './components/MyKitchenSection'; 
-import CalendarSection from './components/CalendarSection'; 
-import DietarySection from './components/DietarySection'; 
-import JournalAndRecipesSection from './components/MealPlanJournalSection'; // CORRECTED IMPORT PATH
-import ChatBubble from './components/ChatBubble'; // Import the new ChatBubble component
-import { UserProfile, Task, TaskStatus, KitchenInventoryItem, SavedMealPlan, Recipe, SavedRecipe, WeeklyMealPlan, CookingTechniqueItem } from './types';
+import MyKitchenSection from './components/MyKitchenSection';
+import CalendarSection from './components/CalendarSection';
+import DietarySection from './components/DietarySection';
+import JournalAndRecipesSection from './components/MealPlanJournalSection';
+import ChatBubbleFixed from './components/ChatBubbleFixed';
+import { UserProfile, Task, TaskStatus, KitchenInventoryItem, SavedMealPlan, Recipe, SavedRecipe, WeeklyMealPlan } from './types';
+import SplashScreen from './components/SplashScreen';
+import DemoScreen from './components/DemoScreen';
+import LoginScreen from './components/LoginScreen';
+import { useAuth0 } from '@auth0/auth0-react';
 
 const App: React.FC = () => {
   const location = useLocation();
+  const { isAuthenticated, isLoading, logout } = useAuth0();
   const [userLoggedIn, setUserLoggedIn] = useState(false);
 
   const [userProfile, setUserProfile] = useState<UserProfile | null>(() => {
@@ -112,7 +116,6 @@ const App: React.FC = () => {
     localStorage.setItem('savedRecipes', JSON.stringify(savedRecipes));
   }, [savedRecipes]);
 
-
   const handleUpdateKitchenInventory = (updatedInventory: KitchenInventoryItem[]) => {
     setKitchenInventory(updatedInventory);
   };
@@ -159,7 +162,6 @@ const App: React.FC = () => {
         id: `recipe-${Date.now()}-${Math.random().toString(36).substring(2,9)}`,
         dateSaved: new Date().toISOString(),
         source: source,
-        // Ensure cookingTechniques is an array of CookingTechniqueItem, even if recipe.cookingTechniques is undefined
         cookingTechniques: recipe.cookingTechniques ? recipe.cookingTechniques.map(ct => ({
             techniqueName: ct.techniqueName,
             description: ct.description,
@@ -199,7 +201,6 @@ const App: React.FC = () => {
     alert("Meal plan deleted from your journal.");
   };
 
-
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <HomeIcon className="w-6 h-6" /> },
     { path: '/profile', label: 'My Profile', icon: <UserCircleIcon className="w-6 h-6" /> },
@@ -212,56 +213,67 @@ const App: React.FC = () => {
     { path: '/marketplace', label: 'Marketplace', icon: <UsersIcon className="w-6 h-6" /> },
   ];
 
+  if (isLoading) return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
+
   return (
     <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="w-20 bg-primary text-white p-3 flex flex-col fixed top-0 left-0 h-full z-40 shadow-lg items-center">
-        <Link to="/" className="text-xl font-bold text-white hover:text-amber-300 transition-colors mb-8 mt-2 block text-center" title="Local Butler AI">
-          LB AI
-        </Link>
-        <nav className="flex flex-col space-y-2 w-full items-center">
-          {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`p-3 rounded-lg flex items-center justify-center transition-all duration-150 ease-in-out w-14 h-14
-                ${(location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)))
+      {/* Hide sidebar and chat on splash, demo, and login (but show for authenticated users on /) */}
+      {!((location.pathname === '/' && !isAuthenticated) || location.pathname === '/demo' || location.pathname === '/login') && (
+        <aside className="w-20 bg-primary text-white p-3 flex flex-col fixed top-0 left-0 h-full z-40 shadow-lg items-center">
+          <Link to="/" className="text-xl font-bold text-white hover:text-amber-300 transition-colors mb-8 mt-2 block text-center" title="Local Butler AI">
+            LB AI
+          </Link>
+          <nav className="flex flex-col space-y-2 w-full items-center">
+            {navItems.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`p-3 rounded-lg flex items-center justify-center transition-all duration-150 ease-in-out w-14 h-14
+                  ${(location.pathname === item.path || (item.path !== '/' && location.pathname.startsWith(item.path)))
+                    ? 'bg-white text-primary shadow-md' 
+                    : 'text-blue-100 hover:bg-blue-500 hover:text-white'
+                  }`}
+                title={item.label}
+              >
+                {item.icon}
+              </Link>
+            ))}
+          </nav>
+          <Link
+              key="/settings"
+              to="/settings"
+              className={`p-3 rounded-lg flex items-center justify-center transition-all duration-150 ease-in-out w-14 h-14 mt-auto mb-2
+                ${location.pathname === "/settings"
                   ? 'bg-white text-primary shadow-md' 
                   : 'text-blue-100 hover:bg-blue-500 hover:text-white'
                 }`}
-              title={item.label}
+              title="Settings"
             >
-              {item.icon}
+              <CogIcon className="w-6 h-6" />
             </Link>
-          ))}
-        </nav>
-        <Link
-            key="/settings"
-            to="/settings"
-            className={`p-3 rounded-lg flex items-center justify-center transition-all duration-150 ease-in-out w-14 h-14 mt-auto mb-2
-              ${location.pathname === "/settings"
-                ? 'bg-white text-primary shadow-md' 
-                : 'text-blue-100 hover:bg-blue-500 hover:text-white'
-              }`}
-            title="Settings"
-          >
-            <CogIcon className="w-6 h-6" />
-          </Link>
-      </aside>
-
+        </aside>
+      )}
       {/* Main Content Area */}
       <div className="flex-1 ml-20 bg-gradient-to-br from-base_200 via-base_100 to-blue-100 text-gray-800">
         <main className="p-4 md:p-8 overflow-y-auto h-screen">
           <Routes>
-            <Route path="/" element={<Dashboard 
-              userLoggedIn={userLoggedIn} 
-              profileComplete={!!userProfile?.mainGoals} 
-              myDraftsCount={tasks.filter(t => t.status === TaskStatus.DRAFT).length}
-              myOngoingTasksCount={tasks.filter(t => t.status === TaskStatus.ONGOING).length}
-              myPendingApprovalCount={tasks.filter(t => t.status === TaskStatus.PENDING_APPROVAL).length}
-              openMarketplaceTasksCount={tasks.filter(t => t.status === TaskStatus.OPEN_FOR_OFFERS).length} 
-              />} 
-            />
+            {isAuthenticated ? (
+              <Route path="/*" element={<Dashboard 
+                userLoggedIn={userLoggedIn} 
+                profileComplete={!!userProfile?.mainGoals} 
+                myDraftsCount={tasks.filter(t => t.status === TaskStatus.DRAFT).length}
+                myOngoingTasksCount={tasks.filter(t => t.status === TaskStatus.ONGOING).length}
+                myPendingApprovalCount={tasks.filter(t => t.status === TaskStatus.PENDING_APPROVAL).length}
+                openMarketplaceTasksCount={tasks.filter(t => t.status === TaskStatus.OPEN_FOR_OFFERS).length} 
+                />} 
+              />
+            ) : (
+              <>
+                <Route path="/" element={<SplashScreen />} />
+                <Route path="/demo" element={<DemoScreen />} />
+                <Route path="/login" element={<LoginScreen />} />
+              </>
+            )}
             <Route path="/profile" element={<UserProfileSection userProfile={userProfile} onProfileUpdate={handleProfileUpdate} onLoginChange={setUserLoggedIn} />} />
             <Route 
               path="/meal-planner"
@@ -286,7 +298,6 @@ const App: React.FC = () => {
                   savedRecipes={savedRecipes}
                   onUpdateSavedRecipes={updateSavedRecipesGlobal}
                   onDeleteSavedRecipe={deleteSavedRecipeFromBookGlobal}
-                  // Props for shopping list feature for saved recipes
                   onAddTask={addTask} 
                   kitchenInventory={kitchenInventory} 
                 />
@@ -304,24 +315,24 @@ const App: React.FC = () => {
               } 
             />
             <Route path="/services" element={<ServiceOrganizerSection userProfile={userProfile} onAddTask={addTask} />} />
-            <Route path="/travel" element={<TravelServicesSection userProfile={userProfile} onAddTask={addTask} />} />
+            <Route path="/travel" element={<TravelServicesSection userProfile={userProfile} onAddTask={(taskData) => addTask({ ...taskData, status: taskData.status || TaskStatus.ONGOING })} />} />
             <Route path="/my-tasks" element={<MyTasksSection tasks={tasks} onUpdateTask={updateTask} onDeleteTask={deleteTask} />} />
             <Route path="/marketplace" element={<MarketplaceSection tasks={tasks} onUpdateTask={updateTask} />} />
             <Route path="/calendar" element={<CalendarSection />} />
             <Route path="/settings" element={<SettingsSection />} />
           </Routes>
           <footer className="bg-gray-700 text-base_100 py-4 text-center text-xs mt-12 rounded-md">
-            <p className="opacity-80">Local Butler AI: Connecting local needs with local helpers. For a true multi-user marketplace, Auth0 & backend are recommended.</p>
-            <p>&copy; {new Date().getFullYear()} Local Butler AI. All rights reserved.</p>
-            <p className="mt-1 opacity-80">Powered by Gemini API</p>
-          </footer> {/* Correctly close the footer tag */}
-          <ChatBubble /> {/* Add ChatBubble after footer, before main closes */}
+            <p className="opacity-80">Local Butler AI: Connecting local needs with local helpers. Serving Fort Meade Area.</p>
+            <p>&copy; {new Date().getFullYear()} Local Butler Ai✨. All rights reserved.</p>
+            <p className="mt-1 opacity-80">Powered by Grupo Saubar❤️</p>
+          </footer>
+          {/* Chat bubble only on main app pages */}
+          {!((location.pathname === '/' && !isAuthenticated) || location.pathname === '/demo' || location.pathname === '/login') && <ChatBubbleFixed />}
         </main>
       </div>
     </div>
   );
 };
-
 
 interface DashboardProps {
   userLoggedIn: boolean;
@@ -434,12 +445,6 @@ const Dashboard: React.FC<DashboardProps> = ({ userLoggedIn, profileComplete, my
           icon={<CogIcon className="w-12 h-12 mx-auto mb-4 text-gray-500" />}
         />
       </div>
-      {!process.env.API_KEY && (
-          <div className="mt-12 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 rounded-md">
-            <p className="font-bold">API Key Not Configured</p>
-            <p>The Gemini API key is not set. AI features will not be available. Please set the <code>API_KEY</code> environment variable.</p>
-          </div>
-        )}
     </div>
   );
 };
@@ -460,6 +465,5 @@ const DashboardCard: React.FC<DashboardCardProps> = ({ title, description, linkT
     </Link>
   );
 };
-
 
 export default App;

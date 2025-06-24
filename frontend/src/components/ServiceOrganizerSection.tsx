@@ -1,7 +1,6 @@
-
 import React, { useState, useCallback } from 'react';
 import { generateText, isApiKeySet } from '../services/geminiService';
-import { ServiceType, UserProfile, WithUserProfile, Task, TaskStatus } from '../types';
+import { ServiceType, WithUserProfile, Task, TaskStatus } from '../types';
 import { AVAILABLE_SERVICE_TYPES, FORT_MEADE_AREA_INFO } from '../constants';
 import LoadingSpinner from './LoadingSpinner';
 import SectionContainer from './SectionContainer';

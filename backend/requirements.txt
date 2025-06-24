@@ -3,11 +3,13 @@ uvicorn[standard]>=0.23.0
 pydantic>=2.0.0
 pydantic-settings>=2.0.0
 python-dotenv>=1.0.0
-google-generativeai==0.8.5
-google-adk>=1.0.0 # Explicitly add or upgrade ADK for latest agent and streaming support
+google-generativeai>=0.8.5
+google-adk>=1.3.0  # Latest ADK with improved agent and streaming support
 
-# Optional, but potentially useful for more complex scenarios or specific tools:
-google-cloud-aiplatform>=1.36.0 # If interacting with Vertex AI services
-requests>=2.30.0 # For any direct HTTP calls made by tools
+# Cloud services (optional)
+google-cloud-aiplatform>=1.36.0
+requests>=2.30.0
 
-# Ensure any other specific dependencies for your agents/tools are added below
+# Development and testing
+pytest>=7.0.0
+pytest-asyncio>=0.21.0

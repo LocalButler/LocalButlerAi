@@ -6,16 +6,30 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
+import sys
+import os
 
-from backend.app.config import settings
-from backend.app.agents import butler_agent as butler_agent_module  # Import module
-from backend.app.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema  # Fix import
+# Add the backend directory to Python path for imports
+backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, backend_dir)
 
 # Construct the path to the .env file in the 'backend' directory relative to this main.py file
 # __file__ is backend/app/main.py -> dirname is backend/app -> dirname is backend -> join with .env
 dotenv_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), '.env')
 print(f"[DEBUG] Attempting to load .env file from: {dotenv_path}") # Debug print for .env path
 load_dotenv(dotenv_path=dotenv_path, override=True) # Load environment variables from specific .env file, override if already set by other means
+
+from butler_agent_pkg.config import settings
+
+# Set the GEMINI_API_KEY environment variable for ADK
+os.environ['GEMINI_API_KEY'] = settings.GEMINI_API_KEY
+
+from google.adk.runners import InMemoryRunner
+from google.genai.types import Part, UserContent
+from butler_agent_pkg.butler_agent import butler_agent
+from butler_agent_pkg.shared_libraries.types import Recipe as RecipeOutputSchema, UserProfile as UserProfileSchema
+from app.api.v1.routers.agentz_router import router as agentz_router
+from app.api.v1.routers.agentz_get_router import router as agentz_get_router
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=settings.LOG_LEVEL.upper())
@@ -26,24 +40,23 @@ app = FastAPI(
     version="0.2.0" # Updated version for new architecture
 )
 
-# --- CORS Middleware Configuration ---
-# Origins that are allowed to make cross-origin requests.
-# For development, you might use ["*"], but for production, restrict this to your frontend's domain.
-# Example: origins = ["http://localhost:3000", "https://your-frontend-domain.com"]
-origins = [
-    "*"  # Allows all origins for development
-    # "http://localhost:3000", # Uncomment and adjust if your frontend runs on port 3000
-    # "http://localhost:5173", # Common for Vite React/Vue dev servers
-]
+# Initialize ADK runner
+runner = None
+try:
+    runner = InMemoryRunner(butler_agent)
+    logger.info("ADK InMemoryRunner initialized successfully")
+except Exception as e:
+    logger.error(f"Failed to initialize ADK runner: {e}")
 
+# --- CORS Middleware Configuration ---
+# Allow all origins for development (not recommended for production)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True, # Allows cookies to be included in requests
-    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"], # Allows all standard methods
-    allow_headers=["*"]  # Allows all headers
+    allow_origins=["*"],  # Allows all origins for development
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-
 
 # --- Pydantic Models for Request and Response ---
 class UserQueryInput(BaseModel):
@@ -127,46 +140,64 @@ async def chat_with_butler(request: UserQueryInput, api_key: str = Depends(get_a
     logger.info(f"Received chat request for session '{session_id}': Query: '{request.query}'")
 
     try:
-        # Send message to the ButlerAgent
-        # The ADK's agent.send_message_async handles session state internally based on session_id
-        print(f"[DEBUG] Type of butler_agent in chat_with_butler: {type(butler_agent_module.butler_agent)}")
-        print(f"[DEBUG] Attributes of butler_agent: {dir(butler_agent_module.butler_agent)}")
-        agent_turn = await butler_agent_module.butler_agent.send_message_async(
-            message=request.query,
-            session_id=session_id
-        ) # Revert to send_message_async
-
-        text_response = agent_turn.output_text
-        structured_data = None
-
-        if agent_turn.structured_output:
-            # The structured_output from the agent (e.g., RecipeAgent) will be here
-            # It's already a dict if the sub-agent used an output_schema and output_key
-            structured_data = agent_turn.structured_output
-            logger.info(f"Agent returned structured output for session '{session_id}': {structured_data}")
+        # Check if ADK runner is available
+        if runner is None:
+            logger.error("ADK runner is not initialized.")
+            raise HTTPException(status_code=500, detail="Agent runner not initialized")
         
-        elif agent_turn.error_message:
-            logger.error(f"Agent error for session '{session_id}': {agent_turn.error_message}")
-            # You might want to return a different HTTP status code for agent errors
+        logger.info("Using ADK runner to process message...")
+        user_id = "frontend_user"
+
+        # Create session 
+        session = await runner.session_service.create_session(
+            app_name=runner.app_name, user_id=user_id
+        )
+        
+        # Use the correct ADK pattern with UserContent
+        content = UserContent(parts=[Part(text=request.query)])
+        
+        events = []
+        async for event in runner.run_async(
+            user_id=session.user_id, session_id=session.id, new_message=content
+        ):
+            events.append(event)
+
+        if not events:
+            logger.warning("ADK runner returned no events.")
             return AgentResponseOutput(
                 session_id=session_id,
-                text_response=text_response or "An error occurred with the agent.",
-                error_message=agent_turn.error_message
+                text_response="I'm sorry, I couldn't process that request. Please try again."
             )
+
+        response_event = events[-1]
+        logger.info(f"ADK runner returned response: {response_event}")
+        
+        # Extract response text
+        response_text = ""
+        if hasattr(response_event, 'content') and hasattr(response_event.content, 'parts'):
+            for part in response_event.content.parts:
+                if hasattr(part, 'text') and part.text:
+                    response_text += part.text
+        elif hasattr(response_event, 'text'):
+            response_text = response_event.text
+        else:
+            response_text = str(response_event)
 
         return AgentResponseOutput(
             session_id=session_id,
-            text_response=text_response or "Agent processed the request.", # Ensure there's always some text
-            structured_output=structured_data
+            text_response=response_text or "Agent processed the request."
         )
 
     except Exception as e:
         logger.error(f"Error during chat processing for session '{session_id}': {e}", exc_info=True)
-        # Consider if the error is from the agent or the FastAPI layer
-        # If it's a general exception, it's likely a 500
-        # If it's a specific agent error not caught by agent_turn.error_message, 
-        # you might want to customize the response.
+        # Print full traceback for debugging
+        import traceback
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"An unexpected error occurred: {str(e)}")
 
+app.include_router(agentz_router, prefix="/api/v1")
+app.include_router(agentz_get_router, prefix="/api/v1")
+
 if __name__ == "__main__":
-    pass
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8000)

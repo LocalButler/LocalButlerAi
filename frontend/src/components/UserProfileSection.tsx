@@ -264,7 +264,7 @@ Create a concise "Butler Persona Profile" summary (max 100 words, written in a f
             className="mt-4 w-full sm:w-auto px-4 py-2 border border-red-300 text-sm font-medium rounded-md text-red-700 bg-red-50 hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
             aria-label="Clear all profile information"
           >
-            Clear Profile & Logout (Simulated)
+            Clear Profile
           </button>
       </div>
     </SectionContainer>
